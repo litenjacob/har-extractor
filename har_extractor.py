@@ -9,6 +9,7 @@ import os
 import sys
 import json
 import shutil
+import re  # Add this at the top if not already imported
 
 try:
     import ijson.backends.yajl2_cffi as ijson
@@ -98,6 +99,13 @@ def get_entry_content(entry):
 
     return text
 
+def sanitize_query(query):
+    """Sanitize query string for safe filenames."""
+    if not query:
+        return ''
+    # Replace unsafe characters
+    return '_' + re.sub(r'[^\w\-_.]', '_', query)
+
 def get_entry_path(entry, subdirs=False):
     try:
         url = urlparse(entry['request']['url'])
@@ -107,6 +115,11 @@ def get_entry_path(entry, subdirs=False):
     fname = url.path.strip('/')
     if fname == '':
         fname = 'index.html'
+
+    query_suffix = sanitize_query(url.query)
+    if query_suffix:
+        name, ext = os.path.splitext(fname)
+        fname = f"{name}{query_suffix}{ext}"
 
     if subdirs:
         return os.path.join(url.netloc, fname)
